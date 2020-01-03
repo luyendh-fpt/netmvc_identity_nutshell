@@ -24,7 +24,7 @@ namespace WebApplication11
             container.RegisterType<IUserStore<Account>, UserStore<Account>>();
             container.RegisterType<UserManager<Account>>();
             container.RegisterType<DbContext, MyDbContext>();
-           // container.RegisterType<ApplicationUserManager>();
+            container.RegisterType<MyUserManager>();
         }
     }
 }

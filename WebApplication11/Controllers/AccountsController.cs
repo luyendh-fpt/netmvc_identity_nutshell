@@ -20,27 +20,10 @@ namespace WebApplication11.Controllers
         private MyDbContext _dbContext;
         private MyUserManager _userManager;
 
-        public MyUserManager UserManager
+        public AccountsController(MyDbContext dbContext, MyUserManager myUserManager)
         {
-            get
-            {
-                return _userManager ?? HttpContext.GetOwinContext().GetUserManager<MyUserManager>();
-            }
-            private set
-            {
-                _userManager = value;
-            }
-        }
-
-        public MyDbContext DbContext
-        {
-            get { return _dbContext ?? HttpContext.GetOwinContext().Get<MyDbContext>(); }
-            set { _dbContext = value; }
-        }
-
-        public AccountsController()
-        {
-            
+            _dbContext = dbContext;
+            _userManager = myUserManager;
         }
 
         public ActionResult Index(string[] ids, string[] roleNames)
@@ -56,13 +39,13 @@ namespace WebApplication11.Controllers
         [HttpPost]
         public ActionResult Login(string username, string password)
         {
-            Account account = UserManager.Find(username, password);
+            Account account = _userManager.Find(username, password);
             if (account == null)
             {
                 return HttpNotFound();
             }
             // success
-            var ident = UserManager.CreateIdentity(account, DefaultAuthenticationTypes.ApplicationCookie);
+            var ident = _userManager.CreateIdentity(account, DefaultAuthenticationTypes.ApplicationCookie);
             //use the instance that has been created. 
             var authManager = HttpContext.GetOwinContext().Authentication;
             authManager.SignIn(
@@ -74,7 +57,7 @@ namespace WebApplication11.Controllers
         // GET: Accounts
         public ActionResult Register()
         {
-            Debug.WriteLine("Count product: " + DbContext.Products.ToList().Count);
+            Debug.WriteLine("Count product: " + _dbContext.Products.ToList().Count);
             return View();
         }
 
@@ -91,15 +74,15 @@ namespace WebApplication11.Controllers
                 Birthday = DateTime.Now,
                 CreatedAt = DateTime.Now
             };
-            IdentityResult result = await UserManager.CreateAsync(account, password);
+            IdentityResult result = await _userManager.CreateAsync(account, password);
             if (result.Succeeded)
             {
-                UserManager.AddToRole(account.Id, "User");
+                _userManager.AddToRole(account.Id, "User");
 
                 // For more information on how to enable account confirmation and password reset please visit https://go.microsoft.com/fwlink/?LinkID=320771
                 // Send an email with this link
-                string code = await UserManager.GenerateEmailConfirmationTokenAsync(account.Id);
-                await UserManager.SendEmailAsync(account.Id, "Hello world! Please confirm your account", "<b>Please confirm your account</b> by clicking <a href=\"http://google.com.vn\">here</a>");
+                string code = await _userManager.GenerateEmailConfirmationTokenAsync(account.Id);
+                await _userManager.SendEmailAsync(account.Id, "Hello world! Please confirm your account", "<b>Please confirm your account</b> by clicking <a href=\"http://google.com.vn\">here</a>");
                 return RedirectToAction("Index", "Home");
             }
             
