@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Mail;
+using System.Threading.Tasks;
 using System.Web;
 using Microsoft.AspNet.Identity;
 using Microsoft.AspNet.Identity.EntityFramework;
@@ -12,22 +14,38 @@ using WebApplication11.Models;
 
 namespace WebApplication11.App_Start
 {
-    public class IdentityConfig
+    public class EmailService : IIdentityMessageService
     {
-        
+        public Task SendAsync(IdentityMessage message)
+        {
+            MailMessage mail = new MailMessage();
+
+            SmtpClient smtpServer = new SmtpClient("smtp.gmail.com");
+            smtpServer.Credentials = new System.Net.NetworkCredential("admin@gmail.com", "password");
+            smtpServer.Port = 587; // Gmail works on this port
+            smtpServer.EnableSsl = true;
+
+            mail.From = new MailAddress("admin@gmail.com");
+            mail.To.Add(message.Destination);
+            mail.Subject = message.Subject;
+            mail.Body = message.Body;
+            mail.IsBodyHtml = true;
+
+            smtpServer.Send(mail);
+            // Plug in your email service here to send an email.
+            return Task.FromResult(0);
+        }
     }
 
-    public class ApplicationUserManager : UserManager<Account>
+    public class MyUserManager : UserManager<Account>
     {
-        public ApplicationUserManager(IUserStore<Account> store) : base(store)
+        public MyUserManager(IUserStore<Account> store) : base(store)
         {
         }
 
-        public static ApplicationUserManager Create(
-            IdentityFactoryOptions<ApplicationUserManager> options,
-            IOwinContext context)
+        public static MyUserManager Create(IdentityFactoryOptions<MyUserManager> options, IOwinContext context)
         {
-            var manager = new ApplicationUserManager(new UserStore<Account>(context.Get<MyDbContext>()));
+            var manager = new MyUserManager(new UserStore<Account>(new MyDbContext()));
             manager.UserValidator = new UserValidator<Account>(manager)
             {
                 AllowOnlyAlphanumericUserNames = false,
@@ -61,7 +79,7 @@ namespace WebApplication11.App_Start
                 BodyFormat = "Your security code is {0}"
             });
 
-            //manager.EmailService = new EmailService();
+            manager.EmailService = new EmailService();
             //manager.SmsService = new SmsService();
 
             var dataProtectionProvider = options.DataProtectionProvider;
@@ -72,5 +90,6 @@ namespace WebApplication11.App_Start
             }
             return manager;
         }
+
     }
 }

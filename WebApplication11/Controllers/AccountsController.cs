@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
@@ -17,14 +18,13 @@ namespace WebApplication11.Controllers
     public class AccountsController : Controller
     {
         private MyDbContext _dbContext;
+        private MyUserManager _userManager;
 
-        private ApplicationUserManager _userManager;
-
-        public ApplicationUserManager UserManager
+        public MyUserManager UserManager
         {
             get
             {
-                return _userManager ?? HttpContext.GetOwinContext().GetUserManager<ApplicationUserManager>();
+                return _userManager ?? HttpContext.GetOwinContext().GetUserManager<MyUserManager>();
             }
             private set
             {
@@ -32,19 +32,19 @@ namespace WebApplication11.Controllers
             }
         }
 
+        public MyDbContext DbContext
+        {
+            get { return _dbContext ?? HttpContext.GetOwinContext().Get<MyDbContext>(); }
+            set { _dbContext = value; }
+        }
 
         public AccountsController()
         {
+            
         }
-
 
         public ActionResult Index(string[] ids, string[] roleNames)
         {
-            foreach (var id in ids)
-            {
-                UserManager.AddToRoles(id, roleNames);
-            }
-            Account acc = _dbContext.Users.Find("");
             return View("Register");
         }
 
@@ -74,7 +74,7 @@ namespace WebApplication11.Controllers
         // GET: Accounts
         public ActionResult Register()
         {
-            _dbContext.Products.ToList();
+            Debug.WriteLine("Count product: " + DbContext.Products.ToList().Count);
             return View();
         }
 
@@ -84,6 +84,7 @@ namespace WebApplication11.Controllers
             var account = new Account()
             {
                 UserName = username,
+                Email = username,
                 FirstName =  "Xuan Hung",
                 LastName = "Dao",
                 Avatar = "avatar",
@@ -94,7 +95,14 @@ namespace WebApplication11.Controllers
             if (result.Succeeded)
             {
                 UserManager.AddToRole(account.Id, "User");
+
+                // For more information on how to enable account confirmation and password reset please visit https://go.microsoft.com/fwlink/?LinkID=320771
+                // Send an email with this link
+                string code = await UserManager.GenerateEmailConfirmationTokenAsync(account.Id);
+                await UserManager.SendEmailAsync(account.Id, "Hello world! Please confirm your account", "<b>Please confirm your account</b> by clicking <a href=\"http://google.com.vn\">here</a>");
+                return RedirectToAction("Index", "Home");
             }
+            
             return View("Register");
         }
 
