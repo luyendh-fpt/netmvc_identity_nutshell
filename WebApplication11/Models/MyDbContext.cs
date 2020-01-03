@@ -20,6 +20,11 @@ namespace WebApplication11.Models
         {
         }
 
+        public static MyDbContext Create()
+        {
+            return new MyDbContext();
+        }
+
         public System.Data.Entity.DbSet<WebApplication11.Models.Product> Products { get; set; }
     }
 }
